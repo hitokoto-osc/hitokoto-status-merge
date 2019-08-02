@@ -71,7 +71,7 @@ db
   .down
   .defaults({
     ids: [],
-    lists: []
+    data: []
   })
   .write()
 export interface ServerListMember {
