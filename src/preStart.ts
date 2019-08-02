@@ -1,6 +1,6 @@
 // 预启动
 import nconf from 'nconf'
-import path from 'path'
+// import path from 'path'
 import winston from 'winston'
 import colors from 'colors/safe'
 import fs from 'fs'
@@ -9,36 +9,47 @@ const pkg = fs.existsSync('./package.json')
   ? JSON.parse(fs.readFileSync('./package.json').toString())
   : {}
 
-export interface preStart {
-  printCopyright(): void
-  initWinston(logFile: string, configFile: string): void
-  registerNconf(configFile: string): void
-  load(params?: loadParams): void
+export interface PreStart {
+  printCopyright(): void;
+  initWinston(logFile: string, configFile: string): void;
+  registerNconf(configFile: string): void;
+  load(params?: LoadParams): void;
 }
 
-export interface loadParams {
-  configFile?: string
-  logFile?: string
+export interface LoadParams {
+  configFile?: string;
+  logFile?: string;
 }
 
-export class preStart implements preStart {
-  static registerNconf(configFile: string) {
+interface NewFunctionConfig {
+  json_logging?: boolean;
+}
+
+function newFunction (config: NewFunctionConfig): object | boolean | (() => string | boolean) | undefined {
+  return function (): string {
+    var date = new Date();
+    return config.json_logging
+      ? date.toJSON()
+      : date.toISOString() + ' [' + global.process.pid + ']';
+  };
+}
+
+export class PreStart implements PreStart {
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
+  static registerNconf (configFile: string): void {
     winston.verbose('* using configuration stored in: %s', configFile)
     nconf.file({
       file: configFile
     })
     nconf.defaults({
+      // eslint-disable-next-line @typescript-eslint/camelcase
       base_dir: '../',
       version: pkg.version
     })
-
-    if (!nconf.get('isCluster')) {
-      nconf.set('isPrimary', 'true')
-      nconf.set('isCluster', 'false')
-    }
   }
 
-  static initWinston(logFile: string, configFile: string) {
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
+  static initWinston (logFile: string, configFile: string): void {
     // 获取 config
     const config = fs.existsSync(configFile)
       ? JSON.parse(fs.readFileSync(configFile).toString())
@@ -48,26 +59,22 @@ export class preStart implements preStart {
     winston.remove(winston.transports.Console)
     winston.add(winston.transports.File, {
       filename: logFile,
-      level: nconf.get('log_level') || 'verbose',
+      level: nconf.get('log_level') || 'info',
       handleExceptions: true,
       maxsize: 5242880,
       maxFiles: 10
     })
     winston.add(winston.transports.Console, {
       colorize: nconf.get('log-colorize') !== 'false',
-      timestamp: function() {
-        var date = new Date()
-        return config.json_logging
-          ? date.toJSON()
-          : date.toISOString() + ' [' + global.process.pid + ']'
-      },
+      timestamp: newFunction(config),
       level: config.log_level || 'verbose',
       json: !!config.json_logging,
       stringify: !!config.json_logging
     })
   }
 
-  static printCopyright() {
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
+  static printCopyright (): void {
     const date = new Date()
     console.log(
       colors.bgBlue(
@@ -94,7 +101,8 @@ export class preStart implements preStart {
     )
   }
 
-  static load(config?: loadParams) {
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
+  static load (config?: LoadParams): void{
     const configFile =
       config && config.configFile ? config.configFile : './config.json'
     const logFile =

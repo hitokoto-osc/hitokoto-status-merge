@@ -1,21 +1,11 @@
 // 请求库
 import axios, { AxiosStatic, AxiosResponse } from 'axios'
-import { statusBody } from './utils'
+import { StatusBody } from './utils'
 
-export default interface Net {
-  axios: AxiosStatic
-  request(
-    uri: string,
-    method: string,
-    qs?: object,
-    data?: object,
-    headers?: object
-  ): Promise<AxiosResponse>
-  getStatusCode(uri: string, method: string): Promise<number>
-}
-
-export default class Net implements Net {
+class Net {
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
   static axios: AxiosStatic = axios
+
   /**
    * 发起请求
    * @param {string} uri URL 地址
@@ -25,7 +15,8 @@ export default class Net implements Net {
    * @param {object} headers headers
    * @returns {Promise<AxiosResponse>}
    */
-  static request(
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
+  static request (
     uri: string,
     method: string,
     qs?: object,
@@ -45,12 +36,14 @@ export default class Net implements Net {
       url: uri,
       method: method,
       headers: baseHeader,
-      params: qs ? qs : {},
-      data: data ? data : {},
+      params: qs || {},
+      data: data || {},
       responseType: 'arraybuffer'
     })
   }
-  static async getStatusCode(
+
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
+  static async getStatusCode (
     uri: string,
     method: string = 'GET'
   ): Promise<number> {
@@ -58,13 +51,17 @@ export default class Net implements Net {
     return responseBody.status
   }
 
-  static async getJSON(
+  // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
+  static async getJSON (
     uri: string,
     method: string = 'GET',
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     qs?: object,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     data?: object,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     headers?: object
-  ): Promise<AxiosResponse | statusBody> {
+  ): Promise<AxiosResponse | StatusBody> {
     const responseBody = await this.request(uri, method)
     if (responseBody.status !== 200) {
       return responseBody
@@ -72,3 +69,5 @@ export default class Net implements Net {
     return JSON.parse(responseBody.data.toString())
   }
 }
+
+export default Net

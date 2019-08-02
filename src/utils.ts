@@ -1,124 +1,132 @@
 import cmp from 'semver-compare'
-import winston from 'winston'
+// import winston from 'winston'
+
+export interface ServerListMember {
+  url: string;
+  id: string;
+  active: boolean;
+  updated_time: number;
+  created_time: number;
+}
 
 // status interface
-export interface statusBody {
-  name: string
-  version: string
-  message: string
-  website: string
-  server_id: string
-  server_status: childServerStatus
-  requests: childRequests
+export interface StatusBody {
+  name: string;
+  version: string;
+  message: string;
+  website: string;
+  server_id: string;
+  server_status: ChildServerStatus;
+  requests: ChildRequests;
   feedback: {
-    Kuertianshi: string
-    freejishu: string
-    a632079: string
-  }
-  copyright: string
-  now: string
-  ts: number
+    Kuertianshi: string;
+    freejishu: string;
+    a632079: string;
+  };
+  copyright: string;
+  now: string;
+  ts: number;
 }
 
-export interface childRequests {
-  all: requestsAll
+export interface ChildRequests {
+  all: RequestsAll;
   hosts: {
-    'v1.hitokoto.cn': hostChild
-    'sslapi.hitokoto.cn': hostChild
-    'api.hitokoto.cn': hostChild
-    'api.a632079.me': hostChild
-  }
+    'v1.hitokoto.cn': HostChild;
+    'sslapi.hitokoto.cn': HostChild;
+    'api.hitokoto.cn': HostChild;
+    'api.a632079.me': HostChild;
+  };
 }
 
-export interface childServerStatus {
-  memory: memoryStatus
-  load: Array<number>
-  hitokto: hitokotoStatus
+export interface ChildServerStatus {
+  memory: MemoryStatus;
+  load: number[];
+  hitokto: HitokotoStatus;
 }
 
-export interface hitokotoStatus {
-  total: number
-  categroy: Array<string>
-  lastUpdate?: number
+export interface HitokotoStatus {
+  total: number;
+  categroy: string[];
+  lastUpdate?: number;
 }
 
-export interface memoryStatus {
-  totol: number
-  free: number
-  usage: number
+export interface MemoryStatus {
+  totol: number;
+  free: number;
+  usage: number;
 }
 
-export interface requestsAll {
-  total: number
-  pastMinute: number
-  pastHour: number
-  pastDay: number
-  dayMap: Array<number>
-  FiveMinuteMap: Array<number>
+export interface RequestsAll {
+  total: number;
+  pastMinute: number;
+  pastHour: number;
+  pastDay: number;
+  dayMap: number[];
+  FiveMinuteMap: number[];
 }
-export interface hostChild {
-  total: number
-  pastMinute: number
-  pastHour: number
-  pastDay: number
-  dayMap: Array<number>
+export interface HostChild {
+  total: number;
+  pastMinute: number;
+  pastHour: number;
+  pastDay: number;
+  dayMap: number[];
 }
-export interface downServerData {
-  id: string
-  startTs: number
-  last: number
-  statusMessage: networkError
+export interface DownServerData {
+  id: string;
+  startTs: number;
+  last: number;
+  statusMessage: NetworkError;
 }
 
-export interface exportData {
-  version: string // Hitokoto Version
-  children: Array<string>
-  downServer: Array<downServerData>
+export interface ExportData {
+  version: string; // Hitokoto Version
+  children: string[];
+  downServer: DownServerData[];
   status: {
-    load: Array<number>
-    memory: number
-    hitokoto: hitokotoStatus
-    childStatus: Array<childServerStatus>
-  }
+    load: number[];
+    memory: number;
+    hitokoto: HitokotoStatus;
+    childStatus: ChildServerStatus[];
+  };
   requests: {
-    all: requestsAll
+    all: RequestsAll;
     hosts: {
-      'v1.hitokoto.cn': hostChild
-      'api.hitokoto.cn': hostChild
-      'sslapi.hitokoto.cn': hostChild
-    }
-  }
-  lastUpdate: number
-  now: string
-  ts: number
+      'v1.hitokoto.cn': HostChild;
+      'api.hitokoto.cn': HostChild;
+      'sslapi.hitokoto.cn': HostChild;
+    };
+  };
+  lastUpdate: number;
+  now: string;
+  ts: number;
 }
 
-export interface networkError {
-  isError: boolean // is Error
-  id: string // Server_id
-  code: number // StatusCode
-  msg: string // error msg
-  stack: string // error stack
-  ts: number // current timestamp
+export interface NetworkError {
+  isError: boolean; // is Error
+  id: string; // Server_id
+  code: number; // StatusCode
+  msg: string; // error msg
+  stack: string; // error stack
+  ts: number; // current timestamp
 }
 
-export interface downServerList {
-  ids: Array<string>
-  data: Array<downServer>
+export interface DownServerListInterface {
+  ids: string[];
+  data: DownServer[];
 }
 
-export interface downServer {
-  id: string
-  start: number
-  statusMsg: networkError
+export interface DownServer {
+  id: string;
+  start: number;
+  statusMsg: NetworkError;
 }
 
-export async function applyMinxin(
-  children: Array<statusBody>,
-  downServerList: downServerList
-) {
+export async function applyMinxin (
+  children: StatusBody[],
+  downServerList: DownServerListInterface
+): Promise<ExportData> {
   // 首先初始化返回类
-  const result: exportData = {
+  const result: ExportData = {
     version: '0.0.0',
     children: [],
     downServer: [],
@@ -171,14 +179,14 @@ export async function applyMinxin(
 
   // 注册一波缓存， 最蠢的数据合并方法
   const loadBuffer = [0, 0, 0]
-  let allDayMapBuffer: Array<number> = []
-  let allFiveMinuteBuffer: Array<number> = []
-  let v1DayMapBuffer: Array<number> = []
-  let apiDayMapBuffer: Array<number> = []
-  let sslapiDayMapBuffer: Array<number> = []
+  let allDayMapBuffer: number[] = []
+  let allFiveMinuteBuffer: number[] = []
+  let v1DayMapBuffer: number[] = []
+  let apiDayMapBuffer: number[] = []
+  let sslapiDayMapBuffer: number[] = []
 
   // 迭代数据集， 合并数据
-  for (let child of children) {
+  for (const child of children) {
     // 汇总子节点名称
     result.children.push(child.server_id)
 
@@ -224,7 +232,7 @@ export async function applyMinxin(
       allDayMapBuffer = child.requests.all.dayMap
     } else {
       // 缓存存在值
-      for (let index in child.requests.all.dayMap) {
+      for (const index in child.requests.all.dayMap) {
         allDayMapBuffer[index] += child.requests.all.dayMap[index]
       }
     }
@@ -234,7 +242,7 @@ export async function applyMinxin(
       allFiveMinuteBuffer = child.requests.all.FiveMinuteMap
     } else {
       // 缓存存在值
-      for (let index in child.requests.all.FiveMinuteMap) {
+      for (const index in child.requests.all.FiveMinuteMap) {
         allFiveMinuteBuffer[index] += child.requests.all.FiveMinuteMap[index]
       }
     }
@@ -254,7 +262,7 @@ export async function applyMinxin(
       v1DayMapBuffer = child.requests.hosts['v1.hitokoto.cn'].dayMap
     } else {
       // 汇总
-      for (let index in child.requests.hosts['v1.hitokoto.cn'].dayMap) {
+      for (const index in child.requests.hosts['v1.hitokoto.cn'].dayMap) {
         v1DayMapBuffer[index] +=
           child.requests.hosts['v1.hitokoto.cn'].dayMap[index]
       }
@@ -275,7 +283,7 @@ export async function applyMinxin(
         apiDayMapBuffer = child.requests.hosts['api.hitokoto.cn'].dayMap
       } else {
         // 汇总
-        for (let index in child.requests.hosts['api.hitokoto.cn'].dayMap) {
+        for (const index in child.requests.hosts['api.hitokoto.cn'].dayMap) {
           apiDayMapBuffer[index] +=
             child.requests.hosts['api.hitokoto.cn'].dayMap[index]
         }
@@ -297,7 +305,7 @@ export async function applyMinxin(
         sslapiDayMapBuffer = child.requests.hosts['sslapi.hitokoto.cn'].dayMap
       } else {
         // 汇总
-        for (let index in child.requests.hosts['sslapi.hitokoto.cn'].dayMap) {
+        for (const index in child.requests.hosts['sslapi.hitokoto.cn'].dayMap) {
           sslapiDayMapBuffer[index] +=
             child.requests.hosts['sslapi.hitokoto.cn'].dayMap[index]
         }
@@ -306,7 +314,7 @@ export async function applyMinxin(
   }
 
   // 计算 load 平均值
-  for (let index in loadBuffer) {
+  for (const index in loadBuffer) {
     result.status.load[index] = loadBuffer[index] / result.children.length
   }
 
@@ -319,7 +327,7 @@ export async function applyMinxin(
 
   // 合并 宕机服务
   if (downServerList.data.length > 0) {
-    for (let child of downServerList.data) {
+    for (const child of downServerList.data) {
       result.children.push(child.id)
       result.downServer.push({
         id: child.id,
