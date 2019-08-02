@@ -2,7 +2,7 @@
 import nconf from 'nconf'
 import winston from 'winston'
 import fs from 'fs'
-import path from 'path'
+// import path from 'path'
 import _ from 'lodash'
 
 // 使用蓝鸟加速
@@ -19,7 +19,7 @@ import net from './src/net'
 import crypto from './src/crypto'
 
 // CronJob
-import { CronJob } from 'cron'
+// import { CronJob } from 'cron'
 
 import { applyMinxin, StatusBody, NetworkError, DownServerListInterface, ServerListMember } from './src/utils'
 
@@ -35,10 +35,15 @@ PreStart.load()
 // ipv4 正则
 const ipv4Reg = /(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5]):[a-zA-Z0-9]+\d/g
 
+// 初始化失败次数 以及 默认重新尝试秒数
+let failtureRequestTimes = 0
+const defaultFailtrueInterval = 10 // 默认失败重试间隔， 单位: 秒
+const defaultRequestInterval = 8 // 默认的合并间隔， 单位： 秒
+
 // 获取子节点列表
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function fetchServerList (): Promise<ServerListMember[]> {
-  winston.info('开始获取节点列表...')
+  winston.verbose('开始获取节点列表...')
   const tagetUri = nconf.get('target_uri')
   const decryptKey = nconf.get('decrypt_key')
   const decryptIv = nconf.get('decrypt_iv')
@@ -121,7 +126,7 @@ async function saveStatus (): Promise<void | Error> {
       })
   }
   const list = childList.list
-  winston.info('开始获取子节点数据...')
+  winston.verbose('开始获取子节点数据...')
   const fetchResult = await fetch(list)
   const children: StatusBody[] = []
   const downServer: NetworkError[] = []
@@ -180,38 +185,37 @@ async function saveStatus (): Promise<void | Error> {
     downServerList.data = bufferData
   }
 
-  winston.info('执行数据合并...')
+  winston.verbose('执行数据合并...')
   // console.log(children)
   // console.log(downServer)
   // console.log(downServerList)
-  const data = await applyMinxin(children, downServerList)
-  fs.existsSync(path.join('./data')) || fs.mkdirSync(path.join('./data'))
-  winston.info('写入状态数据...')
-  fs.writeFileSync(path.join('./data/status.json'), JSON.stringify(data))
-  fs.writeFileSync(path.join('./data/down.json'), JSON.stringify(downServerList))
+  await applyMinxin(children, downServerList)
+  // fs.existsSync(path.join('./data')) || fs.mkdirSync(path.join('./data'))
+  // winston.info('写入状态数据...')
+  // fs.writeFileSync(path.join('./data/status.json'), JSON.stringify(data))
+  // fs.writeFileSync(path.join('./data/down.json'), JSON.stringify(downServerList))
 }
 
 function autoRestartSave (): void {
   saveStatus()
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-    .catch(e => {
-      winston.error(e)
-      winston.info('自动重新尝试获取..')
-      autoRestartSave()
+    .then((): void => {
+      failtureRequestTimes = 0
+      setTimeout(autoRestartSave, defaultRequestInterval)
+    })
+    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type,@typescript-eslint/no-explicit-any
+    .catch((err: any) => {
+      const t = failtureRequestTimes + 1
+      const i = defaultFailtrueInterval * (t ^ 2)
+      winston.warn('在合并状态过程中发生错误， 错误信息如下所示：')
+      winston.error(err)
+      winston.info(`自动重新尝试获取... 目前已失败 ${t} 次， 将在 ${i} 秒后重新尝试。`)
+      failtureRequestTimes = t
+      setTimeout(autoRestartSave, i * 1000);
     })
 }
 
-const job = new CronJob(
-  '*/8 * * * * *',
-  (): void => {
-    autoRestartSave()
-  },
-  (): void => {
-    job.start()
-  },
-  true,
-  'Asia/Shanghai'
-)
+// 启动方法
+autoRestartSave()
 
 const app = new Koa()
 const router = new Router()
