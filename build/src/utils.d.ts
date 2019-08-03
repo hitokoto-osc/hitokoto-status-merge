@@ -1,11 +1,18 @@
-export interface statusBody {
+export interface ServerListMember {
+    url: string;
+    id: string;
+    active: boolean;
+    updated_time: number;
+    created_time: number;
+}
+export interface StatusBody {
     name: string;
     version: string;
     message: string;
     website: string;
     server_id: string;
-    server_status: childServerStatus;
-    requests: childRequests;
+    server_status: ChildServerStatus;
+    requests: ChildRequests;
     feedback: {
         Kuertianshi: string;
         freejishu: string;
@@ -15,74 +22,74 @@ export interface statusBody {
     now: string;
     ts: number;
 }
-export interface childRequests {
-    all: requestsAll;
+export interface ChildRequests {
+    all: RequestsAll;
     hosts: {
-        'v1.hitokoto.cn': hostChild;
-        'sslapi.hitokoto.cn': hostChild;
-        'api.hitokoto.cn': hostChild;
-        'api.a632079.me': hostChild;
+        'v1.hitokoto.cn': HostChild;
+        'sslapi.hitokoto.cn': HostChild;
+        'api.hitokoto.cn': HostChild;
+        'api.a632079.me': HostChild;
     };
 }
-export interface childServerStatus {
-    memory: memoryStatus;
-    load: Array<number>;
-    hitokto: hitokotoStatus;
+export interface ChildServerStatus {
+    memory: MemoryStatus;
+    load: number[];
+    hitokto: HitokotoStatus;
 }
-export interface hitokotoStatus {
+export interface HitokotoStatus {
     total: number;
-    categroy: Array<string>;
+    categroy: string[];
     lastUpdate?: number;
 }
-export interface memoryStatus {
+export interface MemoryStatus {
     totol: number;
     free: number;
     usage: number;
 }
-export interface requestsAll {
+export interface RequestsAll {
     total: number;
     pastMinute: number;
     pastHour: number;
     pastDay: number;
-    dayMap: Array<number>;
-    FiveMinuteMap: Array<number>;
+    dayMap: number[];
+    FiveMinuteMap: number[];
 }
-export interface hostChild {
+export interface HostChild {
     total: number;
     pastMinute: number;
     pastHour: number;
     pastDay: number;
-    dayMap: Array<number>;
+    dayMap: number[];
 }
-export interface downServerData {
+export interface DownServerData {
     id: string;
     startTs: number;
     last: number;
-    statusMessage: networkError;
+    statusMessage: NetworkError;
 }
-export interface exportData {
+export interface ExportData {
     version: string;
-    children: Array<string>;
-    downServer: Array<downServerData>;
+    children: string[];
+    downServer: DownServerData[];
     status: {
-        load: Array<number>;
+        load: number[];
         memory: number;
-        hitokoto: hitokotoStatus;
-        childStatus: Array<childServerStatus>;
+        hitokoto: HitokotoStatus;
+        childStatus: ChildServerStatus[];
     };
     requests: {
-        all: requestsAll;
+        all: RequestsAll;
         hosts: {
-            'v1.hitokoto.cn': hostChild;
-            'api.hitokoto.cn': hostChild;
-            'sslapi.hitokoto.cn': hostChild;
+            'v1.hitokoto.cn': HostChild;
+            'api.hitokoto.cn': HostChild;
+            'sslapi.hitokoto.cn': HostChild;
         };
     };
     lastUpdate: number;
     now: string;
     ts: number;
 }
-export interface networkError {
+export interface NetworkError {
     isError: boolean;
     id: string;
     code: number;
@@ -90,13 +97,13 @@ export interface networkError {
     stack: string;
     ts: number;
 }
-export interface downServerList {
-    ids: Array<string>;
-    data: Array<downServer>;
+export interface DownServerListInterface {
+    ids: string[];
+    data: DownServer[];
 }
-export interface downServer {
+export interface DownServer {
     id: string;
     start: number;
-    statusMsg: networkError;
+    statusMsg: NetworkError;
 }
-export declare function applyMinxin(children: Array<statusBody>, downServerList: downServerList): Promise<exportData>;
+export declare function applyMerge(children: StatusBody[], downServerList: NetworkError[]): Promise<void>;

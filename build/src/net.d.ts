@@ -1,11 +1,6 @@
 import { AxiosStatic, AxiosResponse } from 'axios';
-import { statusBody } from './utils';
-export default interface Net {
-    axios: AxiosStatic;
-    request(uri: string, method: string, qs?: object, data?: object, headers?: object): Promise<AxiosResponse>;
-    getStatusCode(uri: string, method: string): Promise<number>;
-}
-export default class Net implements Net {
+import { StatusBody } from './utils';
+declare class Net {
     static axios: AxiosStatic;
     /**
      * 发起请求
@@ -18,5 +13,6 @@ export default class Net implements Net {
      */
     static request(uri: string, method: string, qs?: object, data?: object, headers?: object): Promise<AxiosResponse>;
     static getStatusCode(uri: string, method?: string): Promise<number>;
-    static getJSON(uri: string, method?: string, qs?: object, data?: object, headers?: object): Promise<AxiosResponse | statusBody>;
+    static getJSON(uri: string, method?: string, qs?: object, data?: object, headers?: object): Promise<AxiosResponse | StatusBody>;
 }
+export default Net;

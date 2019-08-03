@@ -4,187 +4,278 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const semver_compare_1 = __importDefault(require("semver-compare"));
-async function applyMinxin(children, downServerList) {
-    // 首先初始化返回类
-    const result = {
-        version: '0.0.0',
-        children: [],
-        downServer: [],
-        status: {
-            load: [0, 0, 0],
-            memory: 0,
-            hitokoto: {
-                total: 0,
-                categroy: []
-            },
-            childStatus: []
+const lowdb_1 = __importDefault(require("lowdb"));
+const path_1 = __importDefault(require("path"));
+const FileSync_1 = __importDefault(require("lowdb/adapters/FileSync"));
+const lodash_1 = __importDefault(require("lodash"));
+// import winston from 'winston'
+const statusAdapter = new FileSync_1.default(path_1.default.join('./data/status.json'));
+const downServerListAdapter = new FileSync_1.default(path_1.default.join('./data/down.json'));
+const db = {
+    status: lowdb_1.default(statusAdapter),
+    down: lowdb_1.default(downServerListAdapter)
+};
+// 指定数据库的默认值
+db
+    .status
+    .defaults({
+    version: '0.0.0',
+    children: [],
+    downServer: [],
+    status: {
+        load: [0, 0, 0],
+        memory: 0,
+        hitokoto: {
+            total: 0,
+            categroy: []
         },
-        requests: {
-            all: {
+        childStatus: []
+    },
+    requests: {
+        all: {
+            total: 0,
+            pastMinute: 0,
+            pastHour: 0,
+            pastDay: 0,
+            dayMap: [],
+            FiveMinuteMap: []
+        },
+        hosts: {
+            'v1.hitokoto.cn': {
                 total: 0,
                 pastMinute: 0,
                 pastHour: 0,
                 pastDay: 0,
-                dayMap: [],
-                FiveMinuteMap: []
+                dayMap: []
             },
-            hosts: {
-                'v1.hitokoto.cn': {
-                    total: 0,
-                    pastMinute: 0,
-                    pastHour: 0,
-                    pastDay: 0,
-                    dayMap: []
-                },
-                'api.hitokoto.cn': {
-                    total: 0,
-                    pastMinute: 0,
-                    pastHour: 0,
-                    pastDay: 0,
-                    dayMap: []
-                },
-                'sslapi.hitokoto.cn': {
-                    total: 0,
-                    pastMinute: 0,
-                    pastHour: 0,
-                    pastDay: 0,
-                    dayMap: []
-                }
+            'api.hitokoto.cn': {
+                total: 0,
+                pastMinute: 0,
+                pastHour: 0,
+                pastDay: 0,
+                dayMap: []
             },
-        },
-        lastUpdate: 0,
-        now: '',
-        ts: 0
+            'sslapi.hitokoto.cn': {
+                total: 0,
+                pastMinute: 0,
+                pastHour: 0,
+                pastDay: 0,
+                dayMap: []
+            }
+        }
+    },
+    lastUpdate: 0,
+    now: '',
+    ts: 0
+})
+    .write();
+db
+    .down
+    .defaults({
+    ids: [],
+    data: []
+})
+    .write();
+function handleDownServerList(list) {
+    for (const child of list) {
+        if (db.down.get('ids').indexOf(child.id).value() < 0) { // 数据库里不存在
+            db.down.get('ids').push(child.id).value();
+            db.down.get('data')
+                .push({
+                id: child.id,
+                start: Date.now(),
+                statusMsg: child
+            })
+                .value();
+        }
+        else { // 我们修改下信息
+            db.down.get('data')
+                .find({ id: child.id })
+                .assign({ statusMsg: child });
+        }
+    }
+    // 反向检测是否正常
+    for (const id of db.down.get('ids').value()) {
+        if (!lodash_1.default.find(list, { id: id })) { // 机器恢复了
+            db.down.get('ids').pull(id).value();
+            db.down.get('data').remove({ id: id }).value();
+        }
+    }
+    db.down.write(); // 写入文件
+    const r = {
+        ids: db.down.get('ids').value(),
+        data: db.down.get('data').value()
     };
+    return r;
+}
+async function applyMerge(children, downServerList) {
+    // 初始化一些数据
+    let memory = 0;
+    let hitokotoTotal = 0;
+    let hitokotoCategroy = [];
+    db.status.set('status.childStatus', []).value();
+    db.status.set('children', []).value();
+    db.status.set('downServer', []).value();
+    db.status.set('requests.all.FiveMinuteMap', []).value();
+    db.status.set('requests.all.dayMap', []).value();
+    db.status.set('requests.all.total', 0).value();
+    db.status.set('requests.all.pastMinute', 0).value();
+    db.status.set('requests.all.pastHour', 0).value();
+    db.status.set('requests.all.pastDay', 0).value();
+    db.status
+        .set('requests.hosts', {
+        'v1.hitokoto.cn': {
+            total: 0,
+            pastMinute: 0,
+            pastHour: 0,
+            pastDay: 0,
+            dayMap: []
+        },
+        'api.hitokoto.cn': {
+            total: 0,
+            pastMinute: 0,
+            pastHour: 0,
+            pastDay: 0,
+            dayMap: []
+        },
+        'sslapi.hitokoto.cn': {
+            total: 0,
+            pastMinute: 0,
+            pastHour: 0,
+            pastDay: 0,
+            dayMap: []
+        }
+    })
+        .value();
     // 注册一波缓存， 最蠢的数据合并方法
     const loadBuffer = [0, 0, 0];
-    let allDayMapBuffer = [];
-    let allFiveMinuteBuffer = [];
-    let v1DayMapBuffer = [];
-    let apiDayMapBuffer = [];
-    let sslapiDayMapBuffer = [];
-    // 迭代数据集， 合并数据
-    for (let child of children) {
-        // 汇总子节点名称
-        result.children.push(child.server_id);
+    // 迭代数据集
+    for (const child of children) {
+        // 汇总服务器标识
+        db.status.get('children').push(child.server_id).value();
         // 版本号
-        result.version = semver_compare_1.default(result.version, child.version) < 0 ? child.version : result.version;
+        const semVer = db.status.get('version').value();
+        if (semver_compare_1.default(semVer, child.version) < 0) {
+            db.status.set('version', child.version).value();
+        }
         // 缓存 status 统计, 以便结束迭代时计算平均值
         loadBuffer[0] += child.server_status.load[0];
         loadBuffer[1] += child.server_status.load[1];
         loadBuffer[2] += child.server_status.load[2];
-        // 汇总总使用内存
-        result.status.memory += child.server_status.memory.usage;
+        // 汇总总占用内存
+        memory += child.server_status.memory.usage;
         // 一言总数统计汇总
-        result.status.hitokoto.total = result.status.hitokoto.total < child.server_status.hitokto.total ? child.server_status.hitokto.total : result.status.hitokoto.total;
-        result.status.hitokoto.categroy = result.status.hitokoto.categroy.length < child.server_status.hitokto.categroy.length ? child.server_status.hitokto.categroy : result.status.hitokoto.categroy;
-        // 推送子状态
-        const childStatus = {
-            id: child.server_id
-        };
-        result.status.childStatus.push(Object.assign(childStatus, child.server_status));
-        // 合并 all 统计
-        result.requests.all.total += child.requests.all.total; // 合并总请求数
-        result.requests.all.pastMinute += child.requests.all.pastMinute; // 合并每分钟请求数
-        result.requests.all.pastHour += child.requests.all.pastHour; // 合并每小时请求数
-        result.requests.all.pastDay += child.requests.all.pastDay; // 合并每日请求数
-        if (allDayMapBuffer.length === 0) { // 汇总 DayMap 统计
-            // 缓存为空
-            allDayMapBuffer = child.requests.all.dayMap;
-        }
-        else {
-            // 缓存存在值
-            for (let index in child.requests.all.dayMap) {
-                allDayMapBuffer[index] += child.requests.all.dayMap[index];
-            }
-        }
-        if (allFiveMinuteBuffer.length === 0) { // 汇总 FiveMinuteMap 统计
-            // 缓存为空
-            allFiveMinuteBuffer = child.requests.all.FiveMinuteMap;
-        }
-        else {
-            // 缓存存在值
-            for (let index in child.requests.all.FiveMinuteMap) {
-                allFiveMinuteBuffer[index] += child.requests.all.FiveMinuteMap[index];
-            }
-        }
-        // 汇总 hosts 统计
-        result.requests.hosts['v1.hitokoto.cn'].total += child.requests.hosts['v1.hitokoto.cn'].total;
-        result.requests.hosts['v1.hitokoto.cn'].pastMinute += child.requests.hosts['v1.hitokoto.cn'].pastMinute;
-        result.requests.hosts['v1.hitokoto.cn'].pastHour += child.requests.hosts['v1.hitokoto.cn'].pastHour;
-        result.requests.hosts['v1.hitokoto.cn'].pastDay += child.requests.hosts['v1.hitokoto.cn'].pastDay;
-        if (v1DayMapBuffer.length === 0) { // 汇总 FiveMinuteMap 统计
-            // 缓存为空
-            v1DayMapBuffer = child.requests.hosts['v1.hitokoto.cn'].dayMap;
-        }
-        else {
-            // 汇总
-            for (let index in child.requests.hosts['v1.hitokoto.cn'].dayMap) {
-                v1DayMapBuffer[index] += child.requests.hosts['v1.hitokoto.cn'].dayMap[index];
-            }
-        }
-        if (typeof child.requests.hosts['api.hitokoto.cn'] !== 'undefined') {
-            result.requests.hosts['api.hitokoto.cn'].total += child.requests.hosts['api.hitokoto.cn'].total;
-            result.requests.hosts['api.hitokoto.cn'].pastMinute += child.requests.hosts['api.hitokoto.cn'].pastMinute;
-            result.requests.hosts['api.hitokoto.cn'].pastHour += child.requests.hosts['api.hitokoto.cn'].pastHour;
-            result.requests.hosts['api.hitokoto.cn'].pastDay += child.requests.hosts['api.hitokoto.cn'].pastDay;
-            if (apiDayMapBuffer.length === 0) { // 汇总 FiveMinuteMap 统计
-                // 缓存为空
-                apiDayMapBuffer = child.requests.hosts['api.hitokoto.cn'].dayMap;
+        if (hitokotoTotal < child.server_status.hitokto.total)
+            hitokotoTotal = child.server_status.hitokto.total;
+        // 一言分类汇总
+        if (hitokotoCategroy.length < child.server_status.hitokto.categroy.length)
+            hitokotoCategroy = child.server_status.hitokto.categroy;
+        // 推送 childStatus
+        db.status.get('status.childStatus').push(child.server_status).value();
+        // 合并请求总数
+        db.status.set('requests.all', db.status.get('requests.all')
+            // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+            .mapValues((v, k) => {
+            if (k !== 'dayMap' && k !== 'FiveMinuteMap') {
+                return v + child.requests.all[k]; // Todo: 修复错误
             }
             else {
-                // 汇总
-                for (let index in child.requests.hosts['api.hitokoto.cn'].dayMap) {
-                    apiDayMapBuffer[index] += child.requests.hosts['api.hitokoto.cn'].dayMap[index];
-                }
+                return v;
             }
+        })
+            .value()).value();
+        if (db.status.get('requests.all.dayMap').size().value() === 0) { // 当日每小时请求数
+            db.status.set('requests.all.dayMap', child.requests.all.dayMap).value();
         }
-        if (typeof child.requests.hosts['sslapi.hitokoto.cn'] !== 'undefined') {
-            result.requests.hosts['sslapi.hitokoto.cn'].total += child.requests.hosts['sslapi.hitokoto.cn'].total;
-            result.requests.hosts['sslapi.hitokoto.cn'].pastMinute += child.requests.hosts['sslapi.hitokoto.cn'].pastMinute;
-            result.requests.hosts['sslapi.hitokoto.cn'].pastHour += child.requests.hosts['sslapi.hitokoto.cn'].pastHour;
-            result.requests.hosts['sslapi.hitokoto.cn'].pastDay += child.requests.hosts['sslapi.hitokoto.cn'].pastDay;
-            if (sslapiDayMapBuffer.length === 0) { // 汇总 FiveMinuteMap 统计
-                // 缓存为空
-                sslapiDayMapBuffer = child.requests.hosts['sslapi.hitokoto.cn'].dayMap;
-            }
-            else {
-                // 汇总
-                for (let index in child.requests.hosts['sslapi.hitokoto.cn'].dayMap) {
-                    sslapiDayMapBuffer[index] += child.requests.hosts['sslapi.hitokoto.cn'].dayMap[index];
-                }
-            }
+        else {
+            db.status.set('requests.all.dayMap', db.status.get('requests.all.dayMap')
+                // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+                .map((v, i) => {
+                return v + child.requests.all.dayMap[i];
+            })
+                .value()).value();
         }
+        if (db.status.get('requests.all.FiveMinuteMap').size().value() === 0) { // 过去 5 分钟每分钟请求数
+            db.status.set('requests.all.FiveMinuteMap', child.requests.all.FiveMinuteMap).value();
+        }
+        else {
+            db.status.set('requests.all.FiveMinuteMap', db.status.get('requests.all.FiveMinuteMap')
+                // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+                .map((v, i) => {
+                return v + child.requests.all.FiveMinuteMap[i];
+            })
+                .value()).value();
+        }
+        // 合并 hosts 统计
+        db.status.set('requests.hosts', db.status.get('requests.hosts')
+            // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+            .mapValues((hostData, host) => {
+            // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+            return lodash_1.default.mapValues(hostData, (value, key) => {
+                if (key === 'dayMap') {
+                    if (value.length === 0) {
+                        if (child.requests.hosts[host] && child.requests.hosts[host][key]) {
+                            return child.requests.hosts[host][key];
+                        }
+                        else {
+                            return value;
+                        }
+                    }
+                    else {
+                        if (child.requests.hosts[host] && child.requests.hosts[host][key]) {
+                            // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+                            return value.map((v, i) => {
+                                return v + child.requests.hosts[host][key][i];
+                            });
+                        }
+                        else {
+                            return value;
+                        }
+                    }
+                }
+                else {
+                    if (child.requests.hosts[host] && child.requests.hosts[host][key]) {
+                        return value + child.requests.hosts[host][key];
+                    }
+                    else {
+                        return value;
+                    }
+                }
+            });
+        })
+            .value()).value();
     }
     // 计算 load 平均值
-    for (let index in loadBuffer) {
-        result.status.load[index] = loadBuffer[index] / result.children.length;
-    }
-    // 合并 Map
-    result.requests.all.dayMap = allDayMapBuffer;
-    result.requests.all.FiveMinuteMap = allFiveMinuteBuffer;
-    result.requests.hosts['v1.hitokoto.cn'].dayMap = v1DayMapBuffer;
-    result.requests.hosts['api.hitokoto.cn'].dayMap = apiDayMapBuffer;
-    result.requests.hosts['sslapi.hitokoto.cn'].dayMap = sslapiDayMapBuffer;
-    // 合并 宕机服务
-    if (downServerList.data.length > 0) {
-        for (let child of downServerList.data) {
-            result.children.push(child.id);
-            result.downServer.push({
+    db.status.set('status.load', db.status.get('status.load')
+        // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+        .map((v, i) => {
+        return loadBuffer[i] / children.length;
+    })
+        .value()).value();
+    // 合并宕机的服务器
+    const downList = handleDownServerList(downServerList);
+    if (downList.data.length > 0) {
+        for (const child of downList.data) {
+            db.status.get('children').push(child.id).value();
+            db.status.get('downServer').push({
                 id: child.id,
                 startTs: child.start,
                 last: Date.now() - child.start,
                 statusMessage: child.statusMsg
-            });
+            }).value();
         }
     }
     // 写入值
     const ts = Date.now();
     const date = new Date(ts);
-    result.lastUpdate = ts;
-    result.now = date.toLocaleString();
-    result.ts = ts;
-    return result;
+    db.status.set('status.memory', memory).value();
+    db.status.set('status.hitokoto.total', hitokotoTotal).value();
+    db.status.set('status.hitokoto.categroy', hitokotoCategroy).value();
+    db.status.set('lastUpdate', ts).value();
+    db.status.set('now', date.toLocaleString()).value();
+    db.status.set('ts', ts).value();
+    // 写入数据库
+    db.status.write();
 }
-exports.applyMinxin = applyMinxin;
+exports.applyMerge = applyMerge;
 //# sourceMappingURL=utils.js.map

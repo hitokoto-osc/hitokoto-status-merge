@@ -5,8 +5,8 @@ import FileSync from 'lowdb/adapters/FileSync'
 import _ from 'lodash'
 // import winston from 'winston'
 
-const statusAdapter = new FileSync(path.join('./', '../data/status.json'))
-const downServerListAdapter = new FileSync(path.join('./', '../data/down.json'))
+const statusAdapter = new FileSync(path.join('./data/status.json'))
+const downServerListAdapter = new FileSync(path.join('./data/down.json'))
 const db = {
   status: lowdb(statusAdapter),
   down: lowdb(downServerListAdapter)
@@ -194,7 +194,6 @@ export interface DownServer {
   statusMsg: NetworkError;
 }
 
-
 function handleDownServerList (list: NetworkError[]): DownServerListInterface {
   for (const child of list) {
     if (db.down.get('ids').indexOf(child.id).value() < 0) { // 数据库里不存在
@@ -237,6 +236,39 @@ export async function applyMerge (
   let hitokotoTotal = 0
   let hitokotoCategroy: string[] = []
   db.status.set('status.childStatus', []).value()
+  db.status.set('children', []).value()
+  db.status.set('downServer', []).value()
+  db.status.set('requests.all.FiveMinuteMap', []).value()
+  db.status.set('requests.all.dayMap', []).value()
+  db.status.set('requests.all.total', 0).value()
+  db.status.set('requests.all.pastMinute', 0).value()
+  db.status.set('requests.all.pastHour', 0).value()
+  db.status.set('requests.all.pastDay', 0).value()
+  db.status
+    .set('requests.hosts', {
+      'v1.hitokoto.cn': {
+        total: 0,
+        pastMinute: 0,
+        pastHour: 0,
+        pastDay: 0,
+        dayMap: []
+      },
+      'api.hitokoto.cn': {
+        total: 0,
+        pastMinute: 0,
+        pastHour: 0,
+        pastDay: 0,
+        dayMap: []
+      },
+      'sslapi.hitokoto.cn': {
+        total: 0,
+        pastMinute: 0,
+        pastHour: 0,
+        pastDay: 0,
+        dayMap: []
+      }
+    })
+    .value()
 
   // 注册一波缓存， 最蠢的数据合并方法
   const loadBuffer = [0, 0, 0]
@@ -244,10 +276,7 @@ export async function applyMerge (
   // 迭代数据集
   for (const child of children) {
     // 汇总服务器标识
-    const hasId = db.status.get('children').indexOf(child.server_id).value() // TODO: 追踪 Types: LowDB 的解决进度
-    if (!hasId) {
-      db.status.get('children').push(child.server_id).value()
-    }
+    db.status.get('children').push(child.server_id).value()
 
     // 版本号
     const semVer = db.status.get('version').value()
@@ -273,62 +302,79 @@ export async function applyMerge (
     db.status.get('status.childStatus').push(child.server_status).value()
 
     // 合并请求总数
-    db.status.get('status.requests.all')
+    db.status.set('requests.all', db.status.get('requests.all')
       // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
       .mapValues((v, k) => {
-        return v + child.requests.all[k] // Todo: 修复错误
+        if (k !== 'dayMap' && k !== 'FiveMinuteMap') {
+          return v + child.requests.all[k] // Todo: 修复错误
+        } else {
+          return v
+        }
       })
-      .value()
+      .value()).value()
     if (db.status.get('requests.all.dayMap').size().value() === 0) { // 当日每小时请求数
       db.status.set('requests.all.dayMap', child.requests.all.dayMap).value()
     } else {
-      db.status.get('requests.all.dayMap')
+      db.status.set('requests.all.dayMap', db.status.get('requests.all.dayMap')
         // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
         .map((v, i) => {
           return v + child.requests.all.dayMap[i]
         })
-        .value()
+        .value()).value()
     }
     if (db.status.get('requests.all.FiveMinuteMap').size().value() === 0) { // 过去 5 分钟每分钟请求数
-      db.status.set('requests.all.FiveMinuteMap', child.requests.all.dayMap).value()
+      db.status.set('requests.all.FiveMinuteMap', child.requests.all.FiveMinuteMap).value()
     } else {
-      db.status.get('requests.all.FiveMinuteMap')
+      db.status.set('requests.all.FiveMinuteMap', db.status.get('requests.all.FiveMinuteMap')
         // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
         .map((v, i) => {
-          return v + child.requests.all.dayMap[i]
+          return v + child.requests.all.FiveMinuteMap[i]
         })
-        .value()
+        .value()).value()
     }
 
     // 合并 hosts 统计
-    db.status.get('status.requests.hosts')
+    db.status.set('requests.hosts', db.status.get('requests.hosts')
       // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
       .mapValues((hostData, host) => {
         // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-        _.mapValues(hostData, (value, key) => { // Todo: 修复错误
+        return _.mapValues(hostData, (value, key) => { // Todo: 修复错误
           if (key === 'dayMap') {
             if (value.length === 0) {
-              return child.requests.hosts[host][key]
+              if (child.requests.hosts[host] && child.requests.hosts[host][key]) {
+                return child.requests.hosts[host][key]
+              } else {
+                return value
+              }
             } else {
-              // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-              return value.map((v, i) => {
-                return v + child.requests.hosts[host][key][i]
-              })
+              if (child.requests.hosts[host] && child.requests.hosts[host][key]) {
+                // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+                return value.map((v, i) => {
+                  return v + child.requests.hosts[host][key][i]
+                })
+              } else {
+                return value
+              }
             }
           } else {
-            return value + child.requests.hosts[host][key]
+            if (child.requests.hosts[host] && child.requests.hosts[host][key]) {
+              return value + child.requests.hosts[host][key]
+            } else {
+              return value
+            }
           }
         })
       })
-      .value()
+      .value()).value()
   }
 
   // 计算 load 平均值
-  db.status.get('status.load')
+  db.status.set('status.load', db.status.get('status.load')
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-    .map((v,i) => {
-      return loadBuffer[i] / result.children.length
+    .map((v, i) => {
+      return loadBuffer[i] / children.length
     })
+    .value()).value()
 
   // 合并宕机的服务器
   const downList = handleDownServerList(downServerList)
@@ -347,9 +393,12 @@ export async function applyMerge (
   // 写入值
   const ts = Date.now()
   const date = new Date(ts)
-  db.status.set('lastUpdate', ts)
-  db.status.set('now', date.toLocaleString())
-  db.status.set('ts', ts)
+  db.status.set('status.memory', memory).value()
+  db.status.set('status.hitokoto.total', hitokotoTotal).value()
+  db.status.set('status.hitokoto.categroy', hitokotoCategroy).value()
+  db.status.set('lastUpdate', ts).value()
+  db.status.set('now', date.toLocaleString()).value()
+  db.status.set('ts', ts).value()
 
   // 写入数据库
   db.status.write()

@@ -37,8 +37,8 @@ const ipv4Reg = /(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-
 
 // 初始化失败次数 以及 默认重新尝试秒数
 let failtureRequestTimes = 0
-const defaultFailtrueInterval = 10 // 默认失败重试间隔， 单位: 秒
-const defaultRequestInterval = 8 // 默认的合并间隔， 单位： 秒
+const defaultFailtrueInterval = nconf.get('default_failtrue_interval') || 1 // 默认失败重试间隔， 单位: 秒
+const defaultRequestInterval = nconf.get('default_request_interval') || 8 // 默认的合并间隔， 单位： 秒
 
 // 获取子节点列表
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -149,12 +149,14 @@ function autoRestartSave (): void {
   saveStatus()
     .then((): void => {
       failtureRequestTimes = 0
-      setTimeout(autoRestartSave, defaultRequestInterval)
+      const t = defaultRequestInterval
+      winston.verbose(`合并完成！ 将在 ${t} 秒后进行下一次合并。`)
+      setTimeout(autoRestartSave, t * 1000)
     })
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type,@typescript-eslint/no-explicit-any
     .catch((err: any) => {
       const t = failtureRequestTimes + 1
-      const i = defaultFailtrueInterval * (t ^ 2)
+      const i = defaultFailtrueInterval * (t * t)
       winston.error('在合并状态过程中发生错误， 错误信息如下所示：')
       console.error(err)
       winston.info(`自动重新尝试获取... 目前已失败 ${t} 次， 将在 ${i} 秒后重新尝试。`)

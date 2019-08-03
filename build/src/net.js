@@ -15,11 +15,12 @@ class Net {
      * @param {object} headers headers
      * @returns {Promise<AxiosResponse>}
      */
+    // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
     static request(uri, method, qs, data, headers) {
         const baseHeader = {
             'User-Agent': `Mozilla/5.0 (Windows NT 10.0; WOW64; rv:56.0) Gecko/20100101 Firefox/56.0`,
-            'Referer': '',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            Referer: '',
+            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'X-Requested-With': 'Hitokoto Status Minixs Bot'
         };
         if (headers) {
@@ -29,16 +30,24 @@ class Net {
             url: uri,
             method: method,
             headers: baseHeader,
-            params: qs ? qs : {},
-            data: data ? data : {},
+            params: qs || {},
+            data: data || {},
             responseType: 'arraybuffer'
         });
     }
+    // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
     static async getStatusCode(uri, method = 'GET') {
         const responseBody = await this.request(uri, method);
         return responseBody.status;
     }
-    static async getJSON(uri, method = 'GET', qs, data, headers) {
+    // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
+    static async getJSON(uri, method = 'GET', 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    qs, 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    data, 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    headers) {
         const responseBody = await this.request(uri, method);
         if (responseBody.status !== 200) {
             return responseBody;
@@ -46,6 +55,7 @@ class Net {
         return JSON.parse(responseBody.data.toString());
     }
 }
+// eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
 Net.axios = axios_1.default;
 exports.default = Net;
 //# sourceMappingURL=net.js.map

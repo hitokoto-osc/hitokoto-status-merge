@@ -5,13 +5,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const crypto_1 = __importDefault(require("crypto"));
 class Crypto {
+    // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
     static aesEncrypt(data, key, iv) {
-        const cipher = typeof iv !== 'undefined' ? crypto_1.default.createCipheriv('aes-128-cbc', key, iv) : crypto_1.default.createCipher('aes-128-cbc', key);
+        const cipher = typeof iv !== 'undefined'
+            ? crypto_1.default.createCipheriv('aes-128-cbc', key, iv)
+            // eslint-disable-next-line node/no-deprecated-api
+            : crypto_1.default.createCipher('aes-128-cbc', key);
         cipher.setAutoPadding(true);
         return cipher.update(data, 'utf8', 'base64') + cipher.final('base64');
     }
+    // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
     static aesDecrypt(data, key, iv) {
-        const cipher = typeof iv !== 'undefined' ? crypto_1.default.createDecipheriv('aes-128-cbc', key, iv) : crypto_1.default.createDecipher('aes-128-cbc', key);
+        const cipher = typeof iv !== 'undefined'
+            ? crypto_1.default.createDecipheriv('aes-128-cbc', key, iv)
+            // eslint-disable-next-line node/no-deprecated-api
+            : crypto_1.default.createDecipher('aes-128-cbc', key);
         cipher.setAutoPadding(true);
         return cipher.update(data, 'base64', 'utf8') + cipher.final('utf8');
     }

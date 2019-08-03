@@ -1,16 +1,16 @@
-export interface preStart {
+export interface PreStart {
     printCopyright(): void;
     initWinston(logFile: string, configFile: string): void;
     registerNconf(configFile: string): void;
-    load(params?: loadParams): void;
+    load(params?: LoadParams): void;
 }
-export interface loadParams {
+export interface LoadParams {
     configFile?: string;
     logFile?: string;
 }
-export declare class preStart implements preStart {
+export declare class PreStart implements PreStart {
     static registerNconf(configFile: string): void;
     static initWinston(logFile: string, configFile: string): void;
     static printCopyright(): void;
-    static load(config?: loadParams): void;
+    static load(config?: LoadParams): void;
 }

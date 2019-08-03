@@ -1,8 +1,12 @@
 {
-  "name": "status-mixins",
-  "version": "1.0.1",
+  "name": "status-merge",
+  "version": "1.1.0",
   "description": "Status Count Mixins.",
   "main": "/build/core.js",
+  "scripts": {
+    "dev": "tsc -w",
+    "build": "tsc"
+  },
   "repository": "https://github.com/a632079/status-minix",
   "author": "a632079 <a632079@qq.com>",
   "license": "MIT",
