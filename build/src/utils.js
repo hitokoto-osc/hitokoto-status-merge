@@ -48,14 +48,7 @@ db
                 pastDay: 0,
                 dayMap: []
             },
-            'api.hitokoto.cn': {
-                total: 0,
-                pastMinute: 0,
-                pastHour: 0,
-                pastDay: 0,
-                dayMap: []
-            },
-            'sslapi.hitokoto.cn': {
+            'international.v1.hitokoto.cn': {
                 total: 0,
                 pastMinute: 0,
                 pastHour: 0,
@@ -131,14 +124,7 @@ async function applyMerge(children, downServerList) {
             pastDay: 0,
             dayMap: []
         },
-        'api.hitokoto.cn': {
-            total: 0,
-            pastMinute: 0,
-            pastHour: 0,
-            pastDay: 0,
-            dayMap: []
-        },
-        'sslapi.hitokoto.cn': {
+        'international.v1.hitokoto.cn': {
             total: 0,
             pastMinute: 0,
             pastHour: 0,

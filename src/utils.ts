@@ -45,14 +45,7 @@ db
           pastDay: 0,
           dayMap: []
         },
-        'api.hitokoto.cn': {
-          total: 0,
-          pastMinute: 0,
-          pastHour: 0,
-          pastDay: 0,
-          dayMap: []
-        },
-        'sslapi.hitokoto.cn': {
+        'international.v1.hitokoto.cn': {
           total: 0,
           pastMinute: 0,
           pastHour: 0,
@@ -108,6 +101,7 @@ export interface ChildRequests {
     'sslapi.hitokoto.cn': HostChild;
     'api.hitokoto.cn': HostChild;
     'api.a632079.me': HostChild;
+    'international.v1.hitokoto.cn': HostChild;
   };
 }
 
@@ -165,8 +159,7 @@ export interface ExportData {
     all: RequestsAll;
     hosts: {
       'v1.hitokoto.cn': HostChild;
-      'api.hitokoto.cn': HostChild;
-      'sslapi.hitokoto.cn': HostChild;
+      'international.v1.hitokoto.cn': HostChild;
     };
   };
   lastUpdate: number;
@@ -253,14 +246,7 @@ export async function applyMerge (
         pastDay: 0,
         dayMap: []
       },
-      'api.hitokoto.cn': {
-        total: 0,
-        pastMinute: 0,
-        pastHour: 0,
-        pastDay: 0,
-        dayMap: []
-      },
-      'sslapi.hitokoto.cn': {
+      'international.v1.hitokoto.cn': {
         total: 0,
         pastMinute: 0,
         pastHour: 0,
