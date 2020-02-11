@@ -191,7 +191,9 @@ router
 
 // 注册中间件
 app
-  .use(koaCors())
+  .use(koaCors({
+    origin: '*' 
+  }))
   .use(router.routes())
   .use(router.allowedMethods())
   .use(koaBodypaser())
