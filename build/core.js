@@ -166,8 +166,13 @@ router
         ts: now,
         now: new Date(now).toString()
     });
+    ctx.status = 200;
+    ctx.append('Access-Control-Allow-Origin', '*');
+    ctx.append('Access-Control-Allow-Method', 'GET');
     ctx.body = file;
 });
+router
+    .get('/check', ctx => { ctx.status = 200; ctx.body = 'OK'; });
 // 注册中间件
 app
     .use(cors_1.default())
