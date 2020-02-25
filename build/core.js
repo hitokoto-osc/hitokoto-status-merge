@@ -175,7 +175,9 @@ router
     .get('/check', ctx => { ctx.status = 200; ctx.body = 'OK'; });
 // 注册中间件
 app
-    .use(cors_1.default())
+    .use(cors_1.default({
+    origin: '*'
+}))
     .use(router.routes())
     .use(router.allowedMethods())
     .use(koa_bodyparser_1.default())
