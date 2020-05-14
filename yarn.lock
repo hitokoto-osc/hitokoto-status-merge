@@ -2231,10 +2231,10 @@ type-is@^1.6.16:
     media-typer "0.3.0"
     mime-types "~2.1.24"
 
-typescript@^2.8.3:
-  version "2.9.2"
-  resolved "https://registry.npm.taobao.org/typescript/download/typescript-2.9.2.tgz#1cbf61d05d6b96269244eb6a3bce4bd914e0f00c"
-  integrity sha1-HL9h0F1rliaSROtqO85L2RTg8Aw=
+typescript@^3.9.2:
+  version "3.9.2"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.9.2.tgz#64e9c8e9be6ea583c54607677dd4680a1cf35db9"
+  integrity sha512-q2ktq4n/uLuNNShyayit+DTobV2ApPEo/6so68JaD5ojvc/6GClBipedB9zNWYxRSAlZXAe405Rlijzl6qDiSw==
 
 unpipe@1.0.0:
   version "1.0.0"
