@@ -37,10 +37,10 @@
   resolved "https://registry.npm.taobao.org/@types/async/download/@types/async-2.4.2.tgz#9b33d5c9fcebff17139521753eaf992ed5ace8e4"
   integrity sha1-mzPVyfzr/xcTlSF1Pq+ZLtWs6OQ=
 
-"@types/bluebird@^3.5.20":
-  version "3.5.29"
-  resolved "https://registry.npm.taobao.org/@types/bluebird/download/@types/bluebird-3.5.29.tgz#7cd933c902c4fc83046517a1bef973886d00bdb6"
-  integrity sha1-fNkzyQLE/IMEZRehvvlziG0AvbY=
+"@types/bluebird@^3.5.32":
+  version "3.5.32"
+  resolved "https://registry.yarnpkg.com/@types/bluebird/-/bluebird-3.5.32.tgz#381e7b59e39f010d20bbf7e044e48f5caf1ab620"
+  integrity sha512-dIOxFfI0C+jz89g6lQ+TqhGgPQ0MxSnh/E4xuC0blhFtyW269+mPG5QeLgbdwst/LvdP8o1y0o/Gz5EHXLec/g==
 
 "@types/body-parser@*":
   version "1.19.0"
