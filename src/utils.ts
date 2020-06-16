@@ -3,6 +3,7 @@ import lowdb from 'lowdb'
 import path from 'path'
 import FileSync from 'lowdb/adapters/FileSync'
 import _ from 'lodash'
+import winston from 'winston'
 // import winston from 'winston'
 
 const statusAdapter = new FileSync(path.join('./data/status.json'))
@@ -223,7 +224,7 @@ function handleDownServerList (list: NetworkError[]): DownServerListInterface {
 export async function applyMerge (
   children: StatusBody[],
   downServerList: NetworkError[]
-): Promise<void> {
+): Promise<void | boolean> {
   // 初始化一些数据
   let memory = 0
   let hitokotoTotal = 0
@@ -277,6 +278,13 @@ export async function applyMerge (
 
     // 汇总总占用内存
     memory += child.server_status.memory.usage
+
+    // 检测是否缺少 hitokoto 字段
+    if (!child.server_status.hitokto || child.server_status.hitokto.total || child.server_status.hitokto.categroy) {
+      winston.error('在操作合并时出现错误，子节点缺少 hitokoto 相关统计字段，以下为子节点信息，合并中断。')
+      winston.error(JSON.stringify(child))
+      return
+    }
 
     // 一言总数统计汇总
     if (hitokotoTotal < child.server_status.hitokto.total) hitokotoTotal = child.server_status.hitokto.total
@@ -388,4 +396,5 @@ export async function applyMerge (
 
   // 写入数据库
   db.status.write()
+  return true
 }

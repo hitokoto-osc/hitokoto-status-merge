@@ -109,7 +109,7 @@ const childList: ChildList = {
   list: []
 }
 
-async function saveStatus (): Promise<void | Error> {
+async function saveStatus (): Promise<boolean> {
   if (!childList.lastUpdate) {
     childList.list = await fetchServerList()
     childList.lastUpdate = Date.now()
@@ -138,7 +138,14 @@ async function saveStatus (): Promise<void | Error> {
   // console.log(children)
   // console.log(downServer)
   // console.log(downServerList)
-  await applyMerge(children, downServer)
+  try {
+    return !!(await applyMerge(children, downServer))
+  } catch (e) {
+    winston.error('合并过程发生错误，以下为错误信息：')
+    winston.error(e.stack)
+    return false
+  }
+  
   // fs.existsSync(path.join('./data')) || fs.mkdirSync(path.join('./data'))
   // winston.info('写入状态数据...')
   // fs.writeFileSync(path.join('./data/status.json'), JSON.stringify(data))
@@ -147,7 +154,10 @@ async function saveStatus (): Promise<void | Error> {
 
 function autoRestartSave (): void {
   saveStatus()
-    .then((): void => {
+    .then((b: boolean): void => {
+      if (!b) {
+        throw new Error('无法合并, 合并中断')
+      }
       failtureRequestTimes = 0
       const t = defaultRequestInterval
       winston.verbose(`合并完成！ 将在 ${t} 秒后进行下一次合并。`)
@@ -159,7 +169,7 @@ function autoRestartSave (): void {
       const i = defaultFailtrueInterval * (t * t)
       winston.error('在合并状态过程中发生错误， 错误信息如下所示：')
       console.error(err)
-      winston.info(`自动重新尝试获取... 目前已失败 ${t} 次， 将在 ${i} 秒后重新尝试。`)
+      winston.warn(`自动重新尝试获取... 目前已失败 ${t} 次， 将在 ${i} 秒后重新尝试。`)
       failtureRequestTimes = t
       setTimeout(autoRestartSave, i * 1000);
     })
