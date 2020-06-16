@@ -1,5 +1,5 @@
 // 请求库
-import axios, { AxiosStatic, AxiosResponse } from 'axios'
+import axios, { AxiosStatic, AxiosResponse, AxiosRequestConfig } from 'axios'
 import { StatusBody } from './utils'
 
 class Net {
@@ -18,7 +18,7 @@ class Net {
   // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
   static request (
     uri: string,
-    method: string,
+    method: AxiosRequestConfig['method'],
     qs?: object,
     data?: object,
     headers?: object
@@ -45,7 +45,7 @@ class Net {
   // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
   static async getStatusCode (
     uri: string,
-    method: string = 'GET'
+    method: AxiosRequestConfig['method'] = 'GET'
   ): Promise<number> {
     const responseBody = await this.request(uri, method)
     return responseBody.status
@@ -54,7 +54,7 @@ class Net {
   // eslint-disable-next-line @typescript-eslint/explicit-member-accessibility
   static async getJSON (
     uri: string,
-    method: string = 'GET',
+    method: AxiosRequestConfig['method'] = 'GET',
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     qs?: object,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
