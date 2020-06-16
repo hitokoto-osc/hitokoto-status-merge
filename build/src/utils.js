@@ -153,18 +153,17 @@ async function applyMerge(children, downServerList) {
         // 汇总总占用内存
         memory += child.server_status.memory.usage;
         // 检测是否缺少 hitokoto 字段
-        if (!child.server_status.hitokto || !child.server_status.hitokto.total || !child.server_status.hitokto.categroy) {
-            console.log(!child.server_status.hitokto, !child.server_status.hitokto.total, !child.server_status.hitokto.categroy);
+        if (!child.server_status.hitokoto || !child.server_status.hitokoto.total || !child.server_status.hitokoto.categroy) {
             winston_1.default.error('在操作合并时出现错误，子节点缺少 hitokoto 相关统计字段，以下为子节点信息，合并中断。');
             winston_1.default.error(JSON.stringify(child));
             return;
         }
         // 一言总数统计汇总
-        if (hitokotoTotal < child.server_status.hitokto.total)
-            hitokotoTotal = child.server_status.hitokto.total;
+        if (hitokotoTotal < child.server_status.hitokoto.total)
+            hitokotoTotal = child.server_status.hitokoto.total;
         // 一言分类汇总
-        if (hitokotoCategroy.length < child.server_status.hitokto.categroy.length)
-            hitokotoCategroy = child.server_status.hitokto.categroy;
+        if (hitokotoCategroy.length < child.server_status.hitokoto.categroy.length)
+            hitokotoCategroy = child.server_status.hitokoto.categroy;
         // 推送 childStatus
         db.status.get('status.childStatus').push(child.server_status).value();
         // 合并请求总数

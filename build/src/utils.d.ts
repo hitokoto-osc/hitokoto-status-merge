@@ -35,7 +35,7 @@ export interface ChildRequests {
 export interface ChildServerStatus {
     memory: MemoryStatus;
     load: number[];
-    hitokto: HitokotoStatus;
+    hitokoto: HitokotoStatus;
 }
 export interface HitokotoStatus {
     total: number;
