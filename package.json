@@ -45,7 +45,7 @@
     "axios": "^0.19.2",
     "colors": "^1.2.5",
     "cron": "^1.8.2",
-    "koa": "^2.5.1",
+    "koa": "^2.12.1",
     "koa-bodyparser": "^4.3.0",
     "koa-json": "^2.0.2",
     "koa-json-error": "^3.1.2",
