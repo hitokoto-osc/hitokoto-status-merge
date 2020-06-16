@@ -382,6 +382,7 @@ export async function applyMerge (
 
     // 检测是否缺少 hitokoto 字段
     if (!child.server_status.hitokto || !child.server_status.hitokto.total || !child.server_status.hitokto.categroy) {
+      console.log(!child.server_status.hitokto, !child.server_status.hitokto.total, !child.server_status.hitokto.categroy)
       winston.error('在操作合并时出现错误，子节点缺少 hitokoto 相关统计字段，以下为子节点信息，合并中断。')
       winston.error(JSON.stringify(child))
       return
