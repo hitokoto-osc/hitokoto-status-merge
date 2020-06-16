@@ -32,10 +32,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/async@^2.0.49":
-  version "2.4.2"
-  resolved "https://registry.npm.taobao.org/@types/async/download/@types/async-2.4.2.tgz#9b33d5c9fcebff17139521753eaf992ed5ace8e4"
-  integrity sha1-mzPVyfzr/xcTlSF1Pq+ZLtWs6OQ=
+"@types/async@^3.2.3":
+  version "3.2.3"
+  resolved "https://registry.yarnpkg.com/@types/async/-/async-3.2.3.tgz#c56f5e0fc02f8b37196f79239cc857e789b97bb4"
+  integrity sha512-deXFjLZc1h6SOh3hicVgD+S2EAkhSBGX/vdlD4nTzCjjOFQ+bfNiXocQ21xJjFAUwqaCeyvOQMgrnbg4QEV63A==
 
 "@types/bluebird@^3.5.32":
   version "3.5.32"
