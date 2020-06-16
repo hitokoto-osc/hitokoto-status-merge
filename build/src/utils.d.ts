@@ -106,4 +106,4 @@ export interface DownServer {
     start: number;
     statusMsg: NetworkError;
 }
-export declare function applyMerge(children: StatusBody[], downServerList: NetworkError[]): Promise<void>;
+export declare function applyMerge(children: StatusBody[], downServerList: NetworkError[]): Promise<void | boolean>;

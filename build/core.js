@@ -128,7 +128,14 @@ async function saveStatus() {
     // console.log(children)
     // console.log(downServer)
     // console.log(downServerList)
-    await utils_1.applyMerge(children, downServer);
+    try {
+        return !!(await utils_1.applyMerge(children, downServer));
+    }
+    catch (e) {
+        winston_1.default.error('合并过程发生错误，以下为错误信息：');
+        winston_1.default.error(e.stack);
+        return false;
+    }
     // fs.existsSync(path.join('./data')) || fs.mkdirSync(path.join('./data'))
     // winston.info('写入状态数据...')
     // fs.writeFileSync(path.join('./data/status.json'), JSON.stringify(data))
@@ -136,7 +143,10 @@ async function saveStatus() {
 }
 function autoRestartSave() {
     saveStatus()
-        .then(() => {
+        .then((b) => {
+        if (!b) {
+            throw new Error('无法合并, 合并中断');
+        }
         failtureRequestTimes = 0;
         const t = defaultRequestInterval;
         winston_1.default.verbose(`合并完成！ 将在 ${t} 秒后进行下一次合并。`);
@@ -148,7 +158,7 @@ function autoRestartSave() {
         const i = defaultFailtrueInterval * (t * t);
         winston_1.default.error('在合并状态过程中发生错误， 错误信息如下所示：');
         console.error(err);
-        winston_1.default.info(`自动重新尝试获取... 目前已失败 ${t} 次， 将在 ${i} 秒后重新尝试。`);
+        winston_1.default.warn(`自动重新尝试获取... 目前已失败 ${t} 次， 将在 ${i} 秒后重新尝试。`);
         failtureRequestTimes = t;
         setTimeout(autoRestartSave, i * 1000);
     });

@@ -3,11 +3,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.applyMerge = void 0;
 const semver_compare_1 = __importDefault(require("semver-compare"));
 const lowdb_1 = __importDefault(require("lowdb"));
 const path_1 = __importDefault(require("path"));
 const FileSync_1 = __importDefault(require("lowdb/adapters/FileSync"));
 const lodash_1 = __importDefault(require("lodash"));
+const winston_1 = __importDefault(require("winston"));
 // import winston from 'winston'
 const statusAdapter = new FileSync_1.default(path_1.default.join('./data/status.json'));
 const downServerListAdapter = new FileSync_1.default(path_1.default.join('./data/down.json'));
@@ -150,6 +152,12 @@ async function applyMerge(children, downServerList) {
         loadBuffer[2] += child.server_status.load[2];
         // 汇总总占用内存
         memory += child.server_status.memory.usage;
+        // 检测是否缺少 hitokoto 字段
+        if (!child.server_status.hitokto || child.server_status.hitokto.total || child.server_status.hitokto.categroy) {
+            winston_1.default.error('在操作合并时出现错误，子节点缺少 hitokoto 相关统计字段，以下为子节点信息，合并中断。');
+            winston_1.default.error(JSON.stringify(child));
+            return;
+        }
         // 一言总数统计汇总
         if (hitokotoTotal < child.server_status.hitokto.total)
             hitokotoTotal = child.server_status.hitokto.total;
@@ -262,6 +270,7 @@ async function applyMerge(children, downServerList) {
     db.status.set('ts', ts).value();
     // 写入数据库
     db.status.write();
+    return true;
 }
 exports.applyMerge = applyMerge;
 //# sourceMappingURL=utils.js.map

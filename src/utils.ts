@@ -2,12 +2,113 @@ import cmp from 'semver-compare'
 import lowdb from 'lowdb'
 import path from 'path'
 import FileSync from 'lowdb/adapters/FileSync'
-import _ from 'lodash'
+import _, { LoDashExplicitWrapper } from 'lodash'
 import winston from 'winston'
+import { Key } from 'readline'
 // import winston from 'winston'
 
-const statusAdapter = new FileSync(path.join('./data/status.json'))
-const downServerListAdapter = new FileSync(path.join('./data/down.json'))
+const statusAdapter = new FileSync<Status.RootObject>(path.join('./data/status.json'))
+const downServerListAdapter = new FileSync<DownServerListInterface>(path.join('./data/down.json'))
+
+declare module Status {
+
+  export interface StatusMessage {
+      isError: boolean;
+      id: string;
+      code: number;
+      msg: string;
+      stack: string;
+      ts: any;
+  }
+
+  export interface DownServer {
+      id: string;
+      startTs: any;
+      last: number;
+      statusMessage: StatusMessage;
+  }
+
+  export interface Hitokoto {
+      total: number;
+      categroy: string[];
+  }
+
+  export interface Memory {
+      totol: number;
+      free: number;
+      usage: number;
+  }
+
+  export interface Hitokto {
+      total: number;
+      categroy: string[];
+      lastUpdate: number;
+  }
+
+  export interface ChildStatu {
+      memory: Memory;
+      load: number[];
+      hitokto: Hitokto;
+  }
+
+  export interface Status {
+      load: number[];
+      memory: number;
+      hitokoto: Hitokoto;
+      childStatus: ChildStatu[];
+  }
+
+  export interface All {
+      total: number;
+      pastMinute: number;
+      pastHour: number;
+      pastDay: number;
+      dayMap: number[];
+      FiveMinuteMap: number[];
+  }
+
+  export interface V1HitokotoCn {
+      total: number;
+      pastMinute: number;
+      pastHour: number;
+      pastDay: number;
+      dayMap: number[];
+  }
+
+  export interface InternationalV1HitokotoCn {
+      total: number;
+      pastMinute: number;
+      pastHour: number;
+      pastDay: number;
+      dayMap: any[];
+  }
+
+  export interface Hosts {
+      'v1.hitokoto.cn': V1HitokotoCn;
+      'international.v1.hitokoto.cn': InternationalV1HitokotoCn;
+  }
+
+  export interface Requests {
+      all: All;
+      hosts: Hosts;
+  }
+
+  export interface RootObject {
+      version: string;
+      children: string[];
+      downServer: DownServer[];
+      status: Status;
+      requests: Requests;
+      lastUpdate: number;
+      now: string;
+      ts: number;
+  }
+
+}
+
+
+
+
 const db = {
   status: lowdb(statusAdapter),
   down: lowdb(downServerListAdapter)
@@ -280,7 +381,7 @@ export async function applyMerge (
     memory += child.server_status.memory.usage
 
     // 检测是否缺少 hitokoto 字段
-    if (!child.server_status.hitokto || child.server_status.hitokto.total || child.server_status.hitokto.categroy) {
+    if (!child.server_status.hitokto || !child.server_status.hitokto.total || !child.server_status.hitokto.categroy) {
       winston.error('在操作合并时出现错误，子节点缺少 hitokoto 相关统计字段，以下为子节点信息，合并中断。')
       winston.error(JSON.stringify(child))
       return
@@ -290,17 +391,17 @@ export async function applyMerge (
     if (hitokotoTotal < child.server_status.hitokto.total) hitokotoTotal = child.server_status.hitokto.total
 
     // 一言分类汇总
-    if (hitokotoCategroy.length < child.server_status.hitokto.categroy.length) hitokotoCategroy = child.server_status.hitokto.categroy
+    if (hitokotoCategroy.length < child.server_status.hitokto.categroy.length) hitokotoCategroy = child.server_status.hitokto.categroy;
 
     // 推送 childStatus
-    db.status.get('status.childStatus').push(child.server_status).value()
+    (db.status.get('status.childStatus') as unknown as any).push(child.server_status).value()
 
     // 合并请求总数
-    db.status.set('requests.all', db.status.get('requests.all')
+    db.status.set('requests.all', (db.status.get('requests.all') as unknown as any)
       // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-      .mapValues((v, k) => {
+      .mapValues((v: any, k: any) => {
         if (k !== 'dayMap' && k !== 'FiveMinuteMap') {
-          return v + child.requests.all[k] // Todo: 修复错误
+          return v + child.requests.all[k as unknown as 'total'] // TODO: 修复错误的类型推断
         } else {
           return v
         }
@@ -309,9 +410,9 @@ export async function applyMerge (
     if (db.status.get('requests.all.dayMap').size().value() === 0) { // 当日每小时请求数
       db.status.set('requests.all.dayMap', child.requests.all.dayMap).value()
     } else {
-      db.status.set('requests.all.dayMap', db.status.get('requests.all.dayMap')
+      db.status.set('requests.all.dayMap', (db.status.get('requests.all.dayMap') as unknown as any)
         // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-        .map((v, i) => {
+        .map((v: any, i: number) => {
           return v + child.requests.all.dayMap[i]
         })
         .value()).value()
@@ -319,40 +420,40 @@ export async function applyMerge (
     if (db.status.get('requests.all.FiveMinuteMap').size().value() === 0) { // 过去 5 分钟每分钟请求数
       db.status.set('requests.all.FiveMinuteMap', child.requests.all.FiveMinuteMap).value()
     } else {
-      db.status.set('requests.all.FiveMinuteMap', db.status.get('requests.all.FiveMinuteMap')
+      db.status.set('requests.all.FiveMinuteMap', (db.status.get('requests.all.FiveMinuteMap') as unknown as any)
         // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-        .map((v, i) => {
+        .map((v: any, i: number) => {
           return v + child.requests.all.FiveMinuteMap[i]
         })
         .value()).value()
     }
 
     // 合并 hosts 统计
-    db.status.set('requests.hosts', db.status.get('requests.hosts')
+    db.status.set('requests.hosts', (db.status.get('requests.hosts') as unknown as any)
       // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-      .mapValues((hostData, host) => {
+      .mapValues((hostData: HostChild[], host: any) => {
         // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-        return _.mapValues(hostData, (value, key) => { // Todo: 修复错误
+        return _.mapValues(hostData, (value: any, key: any) => { // Todo: 修复错误
           if (key === 'dayMap') {
             if (value.length === 0) {
-              if (child.requests.hosts[host] && child.requests.hosts[host][key]) {
-                return child.requests.hosts[host][key]
+              if (child.requests.hosts[host as 'v1.hitokoto.cn'] && child.requests.hosts[host as 'v1.hitokoto.cn'][key as 'total']) {
+                return child.requests.hosts[host as 'v1.hitokoto.cn'][key as 'total']
               } else {
                 return value
               }
             } else {
-              if (child.requests.hosts[host] && child.requests.hosts[host][key]) {
+              if (child.requests.hosts[host as 'v1.hitokoto.cn'] && child.requests.hosts[host as 'v1.hitokoto.cn'][key as 'total']) {
                 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-                return value.map((v, i) => {
-                  return v + child.requests.hosts[host][key][i]
+                return value.map((v: any, i: number) => {
+                  return v + child.requests.hosts[host as 'v1.hitokoto.cn'][key as 'dayMap'][i]
                 })
               } else {
                 return value
               }
             }
           } else {
-            if (child.requests.hosts[host] && child.requests.hosts[host][key]) {
-              return value + child.requests.hosts[host][key]
+            if (child.requests.hosts[host as 'v1.hitokoto.cn'] && child.requests.hosts[host as 'v1.hitokoto.cn'][key as 'total']) {
+              return value + child.requests.hosts[host as 'v1.hitokoto.cn'][key as 'total']
             } else {
               return value
             }
@@ -363,9 +464,9 @@ export async function applyMerge (
   }
 
   // 计算 load 平均值
-  db.status.set('status.load', db.status.get('status.load')
+  db.status.set('status.load', (db.status.get('status.load') as unknown as any)
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-    .map((v, i) => {
+    .map((v: any, i: number) => {
       return loadBuffer[i] / children.length
     })
     .value()).value()

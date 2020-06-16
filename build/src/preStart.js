@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.PreStart = void 0;
 // 预启动
 const nconf_1 = __importDefault(require("nconf"));
 // import path from 'path'
