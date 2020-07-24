@@ -25,7 +25,7 @@
     "@types/lodash": "^4.14.158",
     "@types/lowdb": "^1.0.9",
     "@types/nconf": "^0.10.0",
-    "@types/node": "^10.1.2",
+    "@types/node": "^14.0.25",
     "@types/pify": "^3.0.2",
     "@types/semver-compare": "^1.0.0",
     "@types/winston": "^2.3.9",
