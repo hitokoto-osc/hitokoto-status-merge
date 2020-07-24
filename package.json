@@ -22,7 +22,7 @@
     "@types/koa-json-error": "^3.1.2",
     "@types/koa-router": "^7.4.1",
     "@types/koa__cors": "^3.0.1",
-    "@types/lodash": "^4.14.109",
+    "@types/lodash": "^4.14.158",
     "@types/lowdb": "^1.0.9",
     "@types/nconf": "^0.0.37",
     "@types/node": "^10.1.2",
