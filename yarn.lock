@@ -383,7 +383,7 @@ async@^3.2.0:
 
 async@~1.0.0:
   version "1.0.0"
-  resolved "https://registry.npm.taobao.org/async/download/async-1.0.0.tgz?cache=0&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Fasync%2Fdownload%2Fasync-1.0.0.tgz#f8fc04ca3a13784ade9e1641af98578cfbd647a9"
+  resolved "https://registry.npm.taobao.org/async/download/async-1.0.0.tgz#f8fc04ca3a13784ade9e1641af98578cfbd647a9"
   integrity sha1-+PwEyjoTeErenhZBr5hXjPvWR6k=
 
 axios@^0.19.2:
@@ -2253,9 +2253,9 @@ type-is@^1.6.16:
     mime-types "~2.1.24"
 
 typescript@^3.9.5:
-  version "3.9.5"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.9.5.tgz#586f0dba300cde8be52dd1ac4f7e1009c1b13f36"
-  integrity sha512-hSAifV3k+i6lEoCJ2k6R2Z/rp/H3+8sdmcn5NrS3/3kE7+RyZXm9aqvxWqjEXHAd8b0pShatpcdMTvEdvAJltQ==
+  version "3.9.7"
+  resolved "https://registry.npm.taobao.org/typescript/download/typescript-3.9.7.tgz?cache=0&sync_timestamp=1595579085786&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2Ftypescript%2Fdownload%2Ftypescript-3.9.7.tgz#98d600a5ebdc38f40cb277522f12dc800e9e25fa"
+  integrity sha1-mNYApevcOPQMsndSLxLcgA6eJfo=
 
 unpipe@1.0.0:
   version "1.0.0"
@@ -2326,9 +2326,9 @@ winston@*:
     winston-transport "^4.3.0"
 
 winston@^2.4.2:
-  version "2.4.4"
-  resolved "https://registry.npm.taobao.org/winston/download/winston-2.4.4.tgz#a01e4d1d0a103cf4eada6fc1f886b3110d71c34b"
-  integrity sha1-oB5NHQoQPPTq2m/B+IazEQ1xw0s=
+  version "2.4.5"
+  resolved "https://registry.npm.taobao.org/winston/download/winston-2.4.5.tgz#f2e431d56154c4ea765545fc1003bd340c95b59a"
+  integrity sha1-8uQx1WFUxOp2VUX8EAO9NAyVtZo=
   dependencies:
     async "~1.0.0"
     colors "1.0.x"
