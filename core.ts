@@ -2,6 +2,7 @@
 import nconf from 'nconf'
 import winston from 'winston'
 import fs from 'fs'
+import event from 'events'
 // import path from 'path'
 // import _ from 'lodash'
 
@@ -152,31 +153,35 @@ async function saveStatus (): Promise<boolean> {
   // fs.writeFileSync(path.join('./data/down.json'), JSON.stringify(downServerList))
 }
 
-function autoRestartSave (): void {
-  saveStatus()
-    .then((b: boolean): void => {
-      if (!b) {
-        throw new Error('无法合并, 合并中断')
-      }
-      failtureRequestTimes = 0
-      const t = defaultRequestInterval
-      winston.verbose(`合并完成！ 将在 ${t} 秒后进行下一次合并。`)
-      setTimeout(autoRestartSave, t * 1000)
-    })
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type,@typescript-eslint/no-explicit-any
-    .catch((err: any) => {
-      const t = failtureRequestTimes + 1
-      const i = defaultFailtrueInterval * (t * t)
-      winston.error('在合并状态过程中发生错误， 错误信息如下所示：')
-      console.error(err)
-      winston.warn(`自动重新尝试获取... 目前已失败 ${t} 次， 将在 ${i} 秒后重新尝试。`)
-      failtureRequestTimes = t
-      setTimeout(autoRestartSave, i * 1000);
-    })
-}
+
+// 利用 Node.js 事件监听机制解决定时器 GG 问题
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const coreEvent = new event.EventEmitter()
+coreEvent.on('exec', async () => {
+  try {
+    const isSuccess = await saveStatus()
+    if (!isSuccess) {
+      throw new Error('无法合并, 合并中断')
+    }
+    failtureRequestTimes = 0
+    const t = defaultRequestInterval
+    winston.verbose(`合并完成！ 将在 ${t} 秒后进行下一次合并。`)
+    await sleep(t * 1000)
+    coreEvent.emit('exec')
+  } catch (err) {
+    const t = failtureRequestTimes + 1
+    const i = defaultFailtrueInterval * (t * t)
+    winston.error('在合并状态过程中发生错误， 错误信息如下所示：')
+    winston.error(err)
+    winston.warn(`自动重新尝试获取... 目前已失败 ${t} 次， 将在 ${i} 秒后重新尝试。`)
+    failtureRequestTimes = t
+    await sleep(i * 1000)
+    coreEvent.emit('exec')
+  }
+})
+coreEvent.emit('exec')
 
 // 启动方法
-autoRestartSave()
 
 const app = new Koa()
 const router = new Router()

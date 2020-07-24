@@ -7,6 +7,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const nconf_1 = __importDefault(require("nconf"));
 const winston_1 = __importDefault(require("winston"));
 const fs_1 = __importDefault(require("fs"));
+const events_1 = __importDefault(require("events"));
 // import path from 'path'
 // import _ from 'lodash'
 // 使用蓝鸟加速
@@ -141,30 +142,34 @@ async function saveStatus() {
     // fs.writeFileSync(path.join('./data/status.json'), JSON.stringify(data))
     // fs.writeFileSync(path.join('./data/down.json'), JSON.stringify(downServerList))
 }
-function autoRestartSave() {
-    saveStatus()
-        .then((b) => {
-        if (!b) {
+// 利用 Node.js 事件监听机制解决定时器 GG 问题
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const coreEvent = new events_1.default.EventEmitter();
+coreEvent.on('exec', async () => {
+    try {
+        const isSuccess = await saveStatus();
+        if (!isSuccess) {
             throw new Error('无法合并, 合并中断');
         }
         failtureRequestTimes = 0;
         const t = defaultRequestInterval;
         winston_1.default.verbose(`合并完成！ 将在 ${t} 秒后进行下一次合并。`);
-        setTimeout(autoRestartSave, t * 1000);
-    })
-        // eslint-disable-next-line @typescript-eslint/explicit-function-return-type,@typescript-eslint/no-explicit-any
-        .catch((err) => {
+        await sleep(t * 1000);
+        coreEvent.emit('exec');
+    }
+    catch (err) {
         const t = failtureRequestTimes + 1;
         const i = defaultFailtrueInterval * (t * t);
         winston_1.default.error('在合并状态过程中发生错误， 错误信息如下所示：');
-        console.error(err);
+        winston_1.default.error(err);
         winston_1.default.warn(`自动重新尝试获取... 目前已失败 ${t} 次， 将在 ${i} 秒后重新尝试。`);
         failtureRequestTimes = t;
-        setTimeout(autoRestartSave, i * 1000);
-    });
-}
+        await sleep(i * 1000);
+        coreEvent.emit('exec');
+    }
+});
+coreEvent.emit('exec');
 // 启动方法
-autoRestartSave();
 const app = new koa_1.default();
 const router = new koa_router_1.default();
 router
