@@ -40,7 +40,7 @@
     "typescript": "^3.9.5"
   },
   "dependencies": {
-    "@koa/cors": "2",
+    "@koa/cors": "3",
     "async": "^3.2.0",
     "axios": "^0.19.2",
     "colors": "^1.2.5",
