@@ -55,6 +55,6 @@
     "nconf": "0.10.0",
     "pify": "5.0.0",
     "semver-compare": "1.0.0",
-    "winston": "2.4.5"
+    "winston": "3.3.3"
   }
 }
